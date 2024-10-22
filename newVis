@@ -1,0 +1,46 @@
+import numpy as np
+import tifffile as tiff
+import open3d as o3d
+import matplotlib.pyplot as plt
+
+# Load and normalize the volume
+file_path = "Experiment15Data\SPC00_TM00383_ANG000_CM0_CHN00_PH0.tif"
+volume = tiff.imread(file_path).astype(np.float32)
+volume = (volume - volume.min()) / (volume.max() - volume.min())  # Normalize to [0, 1]
+
+# Display a slice to check data integrity
+plt.imshow(volume[volume.shape[0] // 2, :, :], cmap='gray')
+plt.title("Middle Slice of the Volume")
+plt.colorbar()
+plt.show()
+
+# Apply manual thresholding
+global_thresh = 0.25  # Adjust this value as needed
+binary_volume = volume > global_thresh
+
+# Extract non-zero points
+z, y, x = np.nonzero(binary_volume)
+points = np.vstack((x, y, z)).T
+
+# Create the point cloud for visualization
+pcd = o3d.geometry.PointCloud()
+pcd.points = o3d.utility.Vector3dVector(points)
+pcd.paint_uniform_color([1, 1, 1])  # RGB (1, 1, 1) = White
+
+# Visualize the point cloud with a custom background color
+vis = o3d.visualization.Visualizer()
+vis.create_window(window_name='3D Fiber Visualization', width=800, height=600)
+
+# Set background color to black
+opt = vis.get_render_option()
+opt.background_color = np.asarray([0, 0, 0])  # RGB (0, 0, 0) = Black
+
+# Set rendering options to avoid transparency
+opt.point_size = 5.0  # Increase point size for better visibility
+
+# Add point cloud to the visualizer
+vis.add_geometry(pcd)
+
+# Run the visualizer
+vis.run()
+vis.destroy_window()
